@@ -1,1 +1,440 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memeaíto RD - Creador de Memes PRO</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        .meme-text {
+            font-family: 'Anton', sans-serif;
+            text-transform: uppercase;
+            color: white;
+            text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000;
+            word-wrap: break-word;
+            text-align: center;
+            line-height: 1.2;
+            position: absolute;
+            cursor: move;
+            width: 90%;
+            padding: 5px;
+            border: 2px dashed transparent;
+            transition: border-color 0.2s;
+        }
+        .meme-text.active { border-color: #6366f1; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1f2937; }
+        ::-webkit-scrollbar-thumb { background: #4f46e5; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6366f1; }
+        input[type="color"] {
+            -webkit-appearance: none;
+            width: 48px;
+            height: 48px;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+        input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        input[type="color"]::-webkit-color-swatch { border: none; border-radius: 0.5rem; }
+        .loader {
+            width: 48px;
+            height: 48px;
+            border: 5px solid #FFF;
+            border-bottom-color: #4f46e5;
+            border-radius: 50%;
+            display: inline-block;
+            box-sizing: border-box;
+            animation: rotation 1s linear infinite;
+        }
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-gray-900 text-white font-sans">
+
+    <!-- Contenedor principal con espacios para anuncios -->
+    <div class="w-full min-h-screen flex flex-col items-center">
+        <div class="container w-full flex-grow mx-auto p-4 flex flex-col">
+            <header class="text-center mb-6">
+                <h1 class="text-4xl md:text-5xl font-bold text-indigo-400">Memeaíto <span class="text-white">RD</span></h1>
+                <p class="text-gray-400 mt-2">¡Crea tus memes a lo dominicano! Sube tu vaina o usa una de las plantillas.</p>
+            </header>
+
+            <!-- Layout principal con anuncio lateral -->
+            <div class="flex-grow grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <!-- Columna de Controles -->
+                <aside class="lg:col-span-4 bg-gray-800 p-6 rounded-2xl shadow-lg flex flex-col">
+                    <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-2">
+                        <h2 class="text-2xl font-bold">Herramientas</h2>
+                        <button id="reset-btn" title="Reiniciar todo" class="text-gray-400 hover:text-white transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M4 4l16 16" /></svg>
+                        </button>
+                    </div>
+                    
+                    <div id="text-controls-container" class="space-y-4 mb-4 overflow-y-auto pr-2" style="max-height: 250px;"></div>
+                    <button id="add-text-btn" class="w-full flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-600 text-indigo-300 font-semibold py-2 px-4 rounded-lg transition-colors duration-200 mb-6">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+                        Añadir Texto
+                    </button>
+
+                    <div class="grid grid-cols-3 gap-4 mb-6">
+                        <div class="col-span-2">
+                            <label for="font-size" class="block mb-2 text-sm font-medium text-gray-300">Tamaño: <span id="font-size-value">40</span>px</label>
+                            <input id="font-size" type="range" min="10" max="100" value="40" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                        </div>
+                        <div>
+                            <label for="font-color" class="block mb-2 text-sm font-medium text-gray-300">Color</label>
+                            <input id="font-color" type="color" value="#FFFFFF" class="bg-gray-700 border border-gray-600 rounded-lg">
+                        </div>
+                    </div>
+
+                    <div class="flex-grow flex flex-col">
+                        <div class="border-b border-gray-700 mb-4">
+                            <nav class="flex justify-between items-center" aria-label="Tabs">
+                                <div class="flex space-x-2">
+                                    <button id="tab-recommended" class="tab-button text-indigo-400 border-b-2 border-indigo-400 px-3 py-2 text-sm font-medium">Virales</button>
+                                    <button id="tab-upload" class="tab-button text-gray-400 hover:text-white px-3 py-2 text-sm font-medium">Sube lo Tuyo</button>
+                                </div>
+                                <button id="refresh-recommendations-btn" title="Dame más memes" class="text-gray-400 hover:text-white transition-colors p-2 rounded-full hover:bg-gray-700">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M5.29 9.29A7.95 7.95 0 0112 4a8 8 0 018 8h-2a6 6 0 00-6-6 5.96 5.96 0 00-4.7 2.29L9 10H4V5zM20 19v-5h-5m-1.29 1.71A7.95 7.95 0 0112 20a8 8 0 01-8-8h2a6 6 0 006 6 5.96 5.96 0 004.7-2.29L15 14h5v5z" /></svg>
+                                </button>
+                            </nav>
+                        </div>
+                        <div id="tab-content-recommended" class="tab-content flex-grow overflow-auto pr-2">
+                            <div id="recommended-gallery" class="grid grid-cols-3 gap-2"></div>
+                        </div>
+                        <div id="tab-content-upload" class="tab-content hidden flex-grow">
+                             <label for="file-upload" class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-700 hover:bg-gray-600">
+                                <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                    <svg class="w-8 h-8 mb-4 text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/></svg>
+                                    <p class="mb-2 text-sm text-gray-400"><span class="font-semibold">Click para subir</span></p>
+                                </div>
+                                <input id="file-upload" type="file" class="hidden" accept="image/*,video/mp4,video/webm"/>
+                            </label> 
+                        </div>
+                    </div>
+
+                    <div class="mt-auto pt-6">
+                        <button id="generate-meme" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition-colors duration-300 shadow-lg">¡Generar Meme!</button>
+                    </div>
+                </aside>
+
+                <!-- Columna de Vista Previa -->
+                <main class="lg:col-span-8 bg-gray-800 p-4 rounded-2xl shadow-lg flex items-center justify-center">
+                    <div id="preview-area" class="w-full max-w-full max-h-[75vh] aspect-w-16 aspect-h-9 bg-black rounded-lg relative overflow-hidden touch-none">
+                        <div id="media-container" class="w-full h-full flex items-center justify-center">
+                             <p class="text-gray-500">Aquí se ve tu obra de arte...</p>
+                        </div>
+                        <div id="text-overlays-container"></div>
+                    </div>
+                </main>
+
+            </div>
+        </div>
+
+        <!-- Anuncio Inferior -->
+        <footer class="w-full p-4 mt-4">
+            <div class="container mx-auto h-24 bg-gray-700 rounded-lg flex items-center justify-center text-gray-400">
+                <p>Publicidad</p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Modal para notificaciones -->
+    <div id="notification-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
+        <div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-sm mx-auto">
+            <h3 id="modal-title" class="text-xl font-bold text-white mb-4"></h3>
+            <p id="modal-message" class="text-gray-300 mb-6"></p>
+            <button id="modal-close-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">Entendido</button>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- ELEMENTOS DEL DOM ---
+        const textControlsContainer = document.getElementById('text-controls-container');
+        const textOverlaysContainer = document.getElementById('text-overlays-container');
+        const addTextBtn = document.getElementById('add-text-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const fontSizeSlider = document.getElementById('font-size');
+        const fontSizeValue = document.getElementById('font-size-value');
+        const fontColorInput = document.getElementById('font-color');
+        const fileUpload = document.getElementById('file-upload');
+        const mediaContainer = document.getElementById('media-container');
+        const previewArea = document.getElementById('preview-area');
+        const generateMemeBtn = document.getElementById('generate-meme');
+        const tabRecommended = document.getElementById('tab-recommended');
+        const tabUpload = document.getElementById('tab-upload');
+        const contentRecommended = document.getElementById('tab-content-recommended');
+        const contentUpload = document.getElementById('tab-content-upload');
+        const recommendedGallery = document.getElementById('recommended-gallery');
+        const refreshRecommendationsBtn = document.getElementById('refresh-recommendations-btn');
+        const modal = document.getElementById('notification-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalMessage = document.getElementById('modal-message');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+
+        // --- ESTADO DE LA APLICACIÓN ---
+        let textElements = [];
+        let activeTextId = null;
+        const MAX_TEXT_ELEMENTS = 5;
+        let allMemes = [];
+
+        // --- DECLARACIÓN DE FUNCIONES ---
+        const showNotification = (title, message) => {
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        };
+
+        const createTextElement = (id, text, top, bottom) => {
+            const controlDiv = document.createElement('div');
+            controlDiv.className = 'flex items-center gap-2';
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.id = `input-${id}`;
+            input.placeholder = `Texto ${id + 1}`;
+            input.value = text;
+            input.className = 'w-full bg-gray-700 border border-gray-600 rounded-lg p-2.5 text-white focus:ring-indigo-500 focus:border-indigo-500';
+            input.addEventListener('input', () => { document.getElementById(`overlay-${id}`).innerText = input.value; });
+            input.addEventListener('focus', () => setActiveText(id));
+            controlDiv.appendChild(input);
+            textControlsContainer.appendChild(controlDiv);
+
+            const overlay = document.createElement('div');
+            overlay.id = `overlay-${id}`;
+            overlay.className = 'meme-text';
+            overlay.innerText = text;
+            overlay.style.left = '5%';
+            if (top) overlay.style.top = top;
+            if (bottom) overlay.style.bottom = bottom;
+            
+            makeDraggable(overlay);
+            overlay.addEventListener('click', () => setActiveText(id));
+            textOverlaysContainer.appendChild(overlay);
+
+            textElements.push({ id, input, overlay });
+            if (textElements.length >= MAX_TEXT_ELEMENTS) {
+                addTextBtn.disabled = true;
+                addTextBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        };
+
+        const setActiveText = (id) => {
+            activeTextId = id;
+            textElements.forEach(el => {
+                el.overlay.classList.toggle('active', el.id === id);
+                el.input.classList.toggle('border-indigo-500', el.id === id);
+            });
+            const activeElement = textElements.find(el => el.id === id);
+            if (activeElement) {
+                fontSizeSlider.value = parseInt(activeElement.overlay.style.fontSize) || 40;
+                fontSizeValue.textContent = fontSizeSlider.value;
+                fontColorInput.value = rgbToHex(activeElement.overlay.style.color) || '#ffffff';
+            }
+        };
+
+        const makeDraggable = (element) => {
+            let isDragging = false, offsetX, offsetY;
+            const startDrag = (clientX, clientY) => {
+                isDragging = true;
+                const rect = element.getBoundingClientRect();
+                offsetX = clientX - rect.left;
+                offsetY = clientY - rect.top;
+                element.style.bottom = 'auto';
+                document.body.style.userSelect = 'none';
+            };
+            const drag = (clientX, clientY) => {
+                if (!isDragging) return;
+                const previewRect = previewArea.getBoundingClientRect();
+                let newX = clientX - previewRect.left - offsetX;
+                let newY = clientY - previewRect.top - offsetY;
+                newX = Math.max(0, Math.min(newX, previewRect.width - element.offsetWidth));
+                newY = Math.max(0, Math.min(newY, previewRect.height - element.offsetHeight));
+                element.style.left = `${newX}px`;
+                element.style.top = `${newY}px`;
+            };
+            const endDrag = () => { isDragging = false; document.body.style.userSelect = 'auto'; };
+            element.addEventListener('mousedown', (e) => startDrag(e.clientX, e.clientY));
+            element.addEventListener('touchstart', (e) => { e.preventDefault(); startDrag(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
+            document.addEventListener('mousemove', (e) => drag(e.clientX, e.clientY));
+            document.addEventListener('touchmove', (e) => { e.preventDefault(); drag(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
+            document.addEventListener('mouseup', endDrag);
+            document.addEventListener('touchend', endDrag);
+        };
+        
+        const resetApp = () => {
+            mediaContainer.innerHTML = '<p class="text-gray-500">Aquí se ve tu obra de arte...</p>';
+            fileUpload.value = '';
+            textControlsContainer.innerHTML = '';
+            textOverlaysContainer.innerHTML = '';
+            textElements = [];
+            addTextBtn.disabled = false;
+            addTextBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            initDefaultTexts();
+        };
+        
+        const initDefaultTexts = () => {
+            createTextElement(0, '', '5%', null);
+            createTextElement(1, '', null, '5%');
+            setActiveText(0);
+        };
+
+        const displayMedia = (file) => {
+            mediaContainer.innerHTML = '';
+            const url = URL.createObjectURL(file);
+            let mediaElement;
+            if (file.type.startsWith('image/')) {
+                mediaElement = document.createElement('img');
+            } else if (file.type.startsWith('video/')) {
+                mediaElement = document.createElement('video');
+                mediaElement.autoplay = true; mediaElement.loop = true; mediaElement.muted = true; mediaElement.playsInline = true;
+            }
+            if (mediaElement) {
+                mediaElement.src = url;
+                mediaElement.className = 'max-w-full max-h-full object-contain';
+                mediaContainer.appendChild(mediaElement);
+            }
+        };
+
+        const displayMediaFromUrl = (url) => {
+            mediaContainer.innerHTML = '';
+            const mediaElement = document.createElement('img');
+            mediaElement.crossOrigin = "anonymous";
+            mediaElement.src = url;
+            mediaElement.className = 'max-w-full max-h-full object-contain';
+            mediaElement.onerror = () => { mediaContainer.innerHTML = '<p class="text-red-400 p-4 text-center">Error al cargar la plantilla.</p>'; };
+            mediaContainer.appendChild(mediaElement);
+        };
+
+        const generateMeme = () => {
+            textElements.forEach(el => el.overlay.classList.remove('active'));
+            html2canvas(previewArea, { useCORS: true, allowTaint: true, backgroundColor: null })
+                .then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = `memeaito-rd-${Date.now()}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                    if(activeTextId !== null) textElements.find(el => el.id === activeTextId)?.overlay.classList.add('active');
+                }).catch(err => {
+                    console.error("Error al generar el meme:", err);
+                    showNotification("Error de Generación", "Hubo un problema al crear la imagen.");
+                });
+        };
+
+        const loadRecommendedTemplates = () => {
+            recommendedGallery.innerHTML = '<div class="col-span-3 flex justify-center items-center p-8"><span class="loader"></span></div>';
+            const memesToShow = allMemes.sort(() => 0.5 - Math.random()).slice(0, 9);
+            
+            recommendedGallery.innerHTML = '';
+            if (memesToShow.length === 0) {
+                recommendedGallery.innerHTML = '<p class="col-span-3 text-center text-gray-400">No se pudieron cargar los memes. Revisa tu conexión.</p>';
+                return;
+            }
+
+            memesToShow.forEach(template => {
+                const div = document.createElement('div');
+                div.className = 'cursor-pointer rounded-lg overflow-hidden border-2 border-transparent hover:border-indigo-500 transition-all aspect-square flex items-center justify-center bg-gray-900';
+                const img = document.createElement('img');
+                img.src = template.url;
+                img.alt = template.name;
+                img.className = 'w-full h-full object-cover';
+                img.crossOrigin = "anonymous";
+                img.onload = () => div.appendChild(img);
+                img.onerror = () => {
+                    div.innerHTML = `<span class="text-xs text-center p-1 text-red-400">${template.name}<br>(Error)</span>`;
+                    div.classList.add('border-red-500');
+                };
+                div.addEventListener('click', () => displayMediaFromUrl(template.url));
+                recommendedGallery.appendChild(div);
+            });
+        };
+
+        const fetchAllMemes = async () => {
+            try {
+                const response = await fetch('https://api.imgflip.com/get_memes');
+                const json = await response.json();
+                if (json.success) {
+                    allMemes = json.data.memes;
+                    loadRecommendedTemplates();
+                } else {
+                    throw new Error('API request failed');
+                }
+            } catch (error) {
+                console.error("Failed to fetch memes:", error);
+                recommendedGallery.innerHTML = '<p class="col-span-3 text-center text-gray-400">No se pudieron cargar los memes. Revisa tu conexión.</p>';
+            }
+        };
+        
+        const switchTab = (activeTab) => {
+            const isRecommended = activeTab === 'recommended';
+            tabRecommended.classList.toggle('text-indigo-400', isRecommended);
+            tabRecommended.classList.toggle('border-indigo-400', isRecommended);
+            tabRecommended.classList.toggle('text-gray-400', !isRecommended);
+            contentRecommended.classList.toggle('hidden', !isRecommended);
+            refreshRecommendationsBtn.classList.toggle('hidden', !isRecommended);
+            
+            tabUpload.classList.toggle('text-indigo-400', !isRecommended);
+            tabUpload.classList.toggle('border-indigo-400', !isRecommended);
+            tabUpload.classList.toggle('text-gray-400', isRecommended);
+            contentUpload.classList.toggle('hidden', isRecommended);
+        };
+        
+        const rgbToHex = (rgb) => {
+            if (!rgb || !rgb.startsWith('rgb')) return rgb;
+            let sep = rgb.indexOf(",") > -1 ? "," : " ";
+            rgb = rgb.substr(4).split(")")[0].split(sep);
+            let r = (+rgb[0]).toString(16), g = (+rgb[1]).toString(16), b = (+rgb[2]).toString(16);
+            if (r.length == 1) r = "0" + r; if (g.length == 1) g = "0" + g; if (b.length == 1) b = "0" + b;
+            return "#" + r + g + b;
+        }
+
+        // --- MANEJO DE EVENTOS ---
+        addTextBtn.addEventListener('click', () => {
+            if (textElements.length < MAX_TEXT_ELEMENTS) {
+                const newId = textElements.length;
+                createTextElement(newId, '', `${20 + newId * 5}%`, null);
+                setActiveText(newId);
+                textElements.find(el => el.id === newId).input.focus();
+            }
+        });
+        resetBtn.addEventListener('click', resetApp);
+        fontSizeSlider.addEventListener('input', () => {
+            const size = fontSizeSlider.value;
+            fontSizeValue.textContent = size;
+            if (activeTextId !== null) {
+                const activeElement = textElements.find(el => el.id === activeTextId);
+                if(activeElement) activeElement.overlay.style.fontSize = `${size}px`;
+            }
+        });
+        fontColorInput.addEventListener('input', () => {
+            if (activeTextId !== null) {
+                const activeElement = textElements.find(el => el.id === activeTextId);
+                if(activeElement) activeElement.overlay.style.color = fontColorInput.value;
+            }
+        });
+        fileUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) displayMedia(file);
+        });
+        generateMemeBtn.addEventListener('click', generateMeme);
+        tabRecommended.addEventListener('click', () => switchTab('recommended'));
+        tabUpload.addEventListener('click', () => switchTab('upload'));
+        modalCloseBtn.addEventListener('click', () => modal.classList.add('hidden'));
+        refreshRecommendationsBtn.addEventListener('click', loadRecommendedTemplates);
+
+        // --- INICIALIZACIÓN ---
+        initDefaultTexts();
+        fetchAllMemes();
+    });
+    </script>
+</body>
+</html>
 
